@@ -1,0 +1,22 @@
+# =====================================================================
+# Development / test dependencies for datahub_proxy_app1
+#
+# Install on top of requirements.txt:
+#     pip install -r requirements.txt -r requirements-dev.txt
+#
+# These are NOT in Jianmin's workplace requirements.txt — they're lab-only
+# tooling for the test suite described in:
+#   * docs/Auth_Proxy_Design.md §9
+#   * docs/Sample_ETL_Application_design.md §13
+# =====================================================================
+
+# Test runner + mocking
+pytest>=7.4.0
+pytest-mock>=3.12.0
+
+# HTTP mocking for `requests` — used to stub upstream DataHub responses
+# without touching Murphy. Standard pairing with the `requests` library.
+responses>=0.24.0
+
+# Coverage reporting
+pytest-cov>=4.1.0
