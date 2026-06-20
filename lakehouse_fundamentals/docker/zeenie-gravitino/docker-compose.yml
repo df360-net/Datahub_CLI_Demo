@@ -1,0 +1,29 @@
+# df360 Iceberg connector test catalog (Gravitino REST) — relocated to Zeenie.
+#
+# This is the former `df360-iceberg-rest` (was on Murphy). It's a DEV/TEST fixture for
+# exercising df360's Iceberg discovery connector — NOT a live df360 dependency, so it runs
+# ON DEMAND, not idle. Removed from Murphy 2026-06-18 (empty volume, nothing to migrate).
+#
+# Port note: Gravitino serves 9001 internally, but 9001 is Zeenie's MinIO console, so we
+# map it to host 9091 here. Reachable at  http://192.168.0.21:9091
+# Point the df360 iceberg connector at host 192.168.0.21, port 9091.
+#
+# Deploy on Zeenie when you need it:
+#   1. scp this to Zeenie (e.g. C:\gravitino\docker-compose.yml)
+#   2. First image pull needs the interactive session (Docker Desktop credential-helper wall) —
+#      use the Scheduled-Task trick, same as the lakehouse, OR run `docker compose up -d` at
+#      the Dell console.
+#   3. Open the LAN firewall for 9091:
+#      New-NetFirewallRule -DisplayName gravitino-9091 -Direction Inbound -Action Allow `
+#        -Protocol TCP -LocalPort 9091 -RemoteAddress 192.168.0.0/24
+services:
+  iceberg-rest:
+    image: apache/gravitino-iceberg-rest:latest
+    container_name: df360-iceberg-rest
+    ports:
+      - "9091:9001"
+    volumes:
+      - iceberg-data:/tmp/gravitino
+    restart: unless-stopped
+volumes:
+  iceberg-data:

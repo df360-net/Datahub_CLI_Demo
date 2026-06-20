@@ -1,0 +1,16 @@
+flowchart LR
+  subgraph host["Application host - loopback only (127.0.0.1)"]
+    APP["Application code<br/>(auth-naive - no credentials)"]
+    PROXY["Auth Proxy<br/>holds SSO session cookie<br/>logs in once, refreshes, retries 401"]
+    APP -->|"PUSH metadata only<br/>plain HTTP"| PROXY
+  end
+  PROXY ==>|"TLS + session cookie<br/>(PLAY_SESSION + actor)"| DH["DataHub<br/>frontend :9002 / GMS"]
+  HUMANS["Humans / consumers"] -.->|"browse & search<br/>(separate path)"| DH
+  DH -.->|"interactive SSO login<br/>(browser, MFA)"| IDP["SSO / Identity Provider"]
+
+  classDef app fill:#e8f0fe,stroke:#4285f4;
+  classDef proxy fill:#fef7e0,stroke:#f9ab00;
+  classDef ext fill:#e6f4ea,stroke:#34a853;
+  class APP app;
+  class PROXY proxy;
+  class DH,IDP,HUMANS ext;

@@ -1,0 +1,187 @@
+# Wave 0 - Lakehouse substrate on ZEENIE (Dell, 192.168.0.21).
+# The same Iceberg + Spark + MinIO quickstart that runs on Murphy, retargeted to Zeenie.
+# Higher tiers (Trino = Wave 1, etc.) get added behind compose profiles later.
+#
+#   Engine        -> spark-iceberg (Spark + Iceberg + Jupyter)   :8888 notebooks, :8082 Spark UI
+#   Table format  -> iceberg-rest  (Iceberg REST catalog)        :8181
+#   File format   -> (Parquet, written by the engine - no container)
+#   Object store  -> minio         (S3-compatible)               :9000 api, :9001 console
+#
+# Access points after `docker compose up -d` (from the LAN):
+#   Jupyter notebooks : http://192.168.0.21:8888
+#   MinIO console     : http://192.168.0.21:9001   (admin / password)
+#   Spark UI          : http://192.168.0.21:8082
+#   Iceberg REST      : http://192.168.0.21:8181
+#
+# FIRST `up` must run at the Dell's console (interactive session) so image pulls work -
+# Docker Desktop's credential helper fails over plain SSH (session 0), same as Murphy.
+# After images are cached, start/stop/exec/up all work over `ssh zeenie`.
+services:
+  spark-iceberg:
+    image: tabulario/spark-iceberg
+    container_name: spark-iceberg
+    restart: unless-stopped
+    networks:
+      iceberg_net:
+    depends_on:
+      - nessie
+      - minio
+    volumes:
+      - ./warehouse:/home/iceberg/warehouse
+      - ./notebooks:/home/iceberg/notebooks/notebooks
+      - ./etl:/home/iceberg/etl
+      - ./spark-conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+      - TZ=America/New_York
+    ports:
+      - 8888:8888
+      - 8082:8080
+      - 4040-4043:4040-4043
+      - 18080:18080
+      - 10000:10000
+      - 10001:10001
+  # (retired 2026-06-19) tabulario/iceberg-rest catalog removed in favor of Nessie,
+  # so Spark + Dremio OSS share one catalog. Spark's baked-in `demo` catalog config
+  # still points at rest:8181 but is unused (we use the `nessie` catalog).
+  minio:
+    image: minio/minio
+    container_name: minio
+    restart: unless-stopped
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=password
+      - MINIO_DOMAIN=minio
+    networks:
+      iceberg_net:
+        aliases:
+          - warehouse.minio
+    ports:
+      - 9000:9000
+      - 9001:9001
+    command: ["server", "/data", "--console-address", ":9001"]
+    volumes:
+      - minio-data:/data
+  mc:
+    depends_on:
+      - minio
+    image: minio/mc
+    container_name: mc
+    restart: unless-stopped
+    networks:
+      iceberg_net:
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc alias set minio http://minio:9000 admin password) do echo '...waiting...' && sleep 1; done;
+      /usr/bin/mc mb --ignore-existing minio/warehouse;
+      /usr/bin/mc anonymous set public minio/warehouse;
+      tail -f /dev/null
+      "
+  # Iceberg catalog shared by Spark (writer) and Dremio OSS (reader). Replaces the
+  # generic tabulario/iceberg-rest catalog, because Dremio OSS's generic REST-catalog
+  # source is Enterprise-only, whereas its Nessie source is in OSS. Tables stay 100%
+  # Iceberg; only the catalog (the metadata-pointer bookkeeper) changes.
+  nessie:
+    image: ghcr.io/projectnessie/nessie
+    container_name: nessie
+    restart: unless-stopped
+    networks:
+      iceberg_net:
+    ports:
+      - 19120:19120
+    environment:
+      - TZ=America/New_York
+      - NESSIE_VERSION_STORE_TYPE=ROCKSDB
+      - NESSIE_VERSION_STORE_PERSIST_ROCKS_DATABASE_PATH=/home/nessie/data
+    volumes:
+      - nessie-data:/home/nessie
+  # On-demand engine (mirrors the company's Spark + Dremio combo). Start with:
+  #   docker compose --profile dremio up -d dremio
+  # Then open http://192.168.0.21:9047, create the admin user, and add MinIO as an
+  # S3 source (endpoint minio:9000, admin/password, path-style, non-SSL) to read the
+  # same Iceberg tables Spark writes. Not part of the default `up`.
+  dremio:
+    image: dremio/dremio-oss
+    container_name: dremio
+    restart: unless-stopped
+    profiles: ["dremio"]
+    networks:
+      iceberg_net:
+    ports:
+      - 9047:9047
+      - 31010:31010
+      - 32010:32010
+      - 45678:45678
+    volumes:
+      - ./dremio:/opt/dremio/data
+    environment:
+      - DREMIO_JAVA_SERVER_EXTRA_OPTS=-Dpaths.dist=file:///opt/dremio/data/dist
+      - TZ=America/New_York
+  # Wave 3 - orchestration (mirrors the company's Airflow). Simplest possible: one
+  # container running `airflow standalone` = webserver + scheduler + triggerer with
+  # a SQLite metadata DB and SequentialExecutor (tasks run one at a time). For
+  # LEARNING the orchestrator itself, not parallel/production scheduling. State +
+  # SQLite DB persist on the airflow-data named volume; DAGs are editable from the
+  # host at ./airflow/dags. UI: http://192.168.0.21:8080
+  #   user `admin`, password in the container at /opt/airflow/standalone_admin_password.txt
+  #   (docker exec airflow cat /opt/airflow/standalone_admin_password.txt)
+  airflow:
+    build: ./airflow
+    image: airflow-sales:2.10.5
+    container_name: airflow
+    restart: unless-stopped
+    networks:
+      iceberg_net:
+    ports:
+      - 8080:8080
+    environment:
+      - TZ=America/New_York
+      - AIRFLOW__CORE__DEFAULT_TIMEZONE=America/New_York
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+    volumes:
+      - airflow-data:/opt/airflow
+      - ./airflow/dags:/opt/airflow/dags
+      - ./sales:/opt/sales                              # Sales code (tools/serving/bi + .env)
+      - /var/run/docker.sock:/var/run/docker.sock       # docker-exec the spark-iceberg jobs
+    # clear stale *.pid left on the persisted volume by an ungraceful stop/recreate, else the
+    # webserver sees a stale pidfile and never binds 8080.
+    command: bash -c "rm -f /opt/airflow/*.pid; exec airflow standalone"
+  # Wave 4 - BI (mirrors the company's BI tool). Lean single container: official Superset
+  # image + the Dremio Arrow Flight driver baked in (superset/Dockerfile), SQLite metadata on
+  # the superset-home volume. Bootstrap on start: db upgrade -> create-admin -> init -> server.
+  # Reads the Dremio `sales_curated` space over Flight (dremio:32010). UI: http://192.168.0.21:8088
+  #   user `admin`, password `password` (lab). See docs/Sales_BI_Design.md.
+  superset:
+    build: ./superset
+    image: superset-dremio:6.1.0
+    container_name: superset
+    restart: unless-stopped
+    networks:
+      iceberg_net:
+    ports:
+      - 8088:8088
+    environment:
+      - TZ=America/New_York
+      - SUPERSET_SECRET_KEY=zeenie-lab-superset-not-a-real-secret
+      - SUPERSET_CONFIG_PATH=/app/pythonpath/superset_config.py
+    volumes:
+      - superset-home:/app/superset_home
+      - ./superset/superset_config.py:/app/pythonpath/superset_config.py
+    command: >
+      bash -c "superset db upgrade &&
+      (superset fab create-admin --username admin --firstname Admin --lastname User --email admin@local --password password || true) &&
+      superset init &&
+      /usr/bin/run-server.sh"
+networks:
+  iceberg_net:
+volumes:
+  nessie-data:
+  minio-data:
+  airflow-data:
+  superset-home:

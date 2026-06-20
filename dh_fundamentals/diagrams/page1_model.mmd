@@ -1,0 +1,15 @@
+flowchart LR
+  A["Entity + Aspect<br/>addressed by a URN"]
+  A -->|"1 - written as an event (MCP)"| GMS["GMS<br/>commits the change"]
+  GMS -->|"2 - stored as truth"| DB[("MySQL<br/>source of truth")]
+  GMS -->|"3 - logged as an event (MCL)"| K{{"Kafka — the stream"}}
+  K -->|"4 - fanned out"| S[("Search index")]
+  K -->|"4 - fanned out"| G[("Graph index")]
+  K -->|"4 - fanned out"| T[("Timeseries index")]
+
+  classDef truth fill:#e8f0fe,stroke:#4285f4;
+  classDef read fill:#e6f4ea,stroke:#34a853;
+  classDef stream fill:#fef7e0,stroke:#f9ab00;
+  class DB truth;
+  class S,G,T read;
+  class K stream;

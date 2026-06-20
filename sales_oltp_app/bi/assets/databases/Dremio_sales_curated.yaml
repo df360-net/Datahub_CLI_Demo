@@ -1,0 +1,18 @@
+database_name: Dremio (sales_curated)
+sqlalchemy_uri: dremio+flight://jianminwei:XXXXXXXXXX@dremio:32010/dremio?UseEncryption=false
+cache_timeout: null
+expose_in_sqllab: true
+allow_run_async: false
+allow_ctas: false
+allow_cvas: false
+allow_dml: false
+allow_file_upload: false
+extra:
+  metadata_params: {}
+  engine_params: {}
+  metadata_cache_timeout: {}
+  schemas_allowed_for_file_upload: []
+impersonate_user: false
+configuration_method: sqlalchemy_form
+uuid: 4a223bc5-731f-4dff-9bbe-4a67adfb842d
+version: 1.0.0

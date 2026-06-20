@@ -1,0 +1,23 @@
+slice_name: Revenue by Segment
+description: null
+certified_by: null
+certification_details: null
+viz_type: pie
+params:
+  datasource: 1__table
+  adhoc_filters: []
+  viz_type: pie
+  groupby:
+  - segment
+  metric: revenue
+  row_limit: 100
+query_context: '{"datasource": {"id": 1, "type": "table"}, "force": false, "queries":
+  [{"metrics": ["revenue"], "columns": ["segment"], "filters": [], "extras": {"having":
+  "", "where": ""}, "orderby": [["revenue", false]], "row_limit": 100, "annotation_layers":
+  [], "series_limit": 0, "order_desc": true}], "form_data": {"datasource": "1__table",
+  "adhoc_filters": [], "viz_type": "pie", "groupby": ["segment"], "metric": "revenue",
+  "row_limit": 100}, "result_format": "json", "result_type": "full"}'
+cache_timeout: null
+uuid: 48ebf501-4999-4195-8694-dd1f2e02514f
+version: 1.0.0
+dataset_uuid: 1db1eeb1-1bbd-4833-be3a-8d1a6bf282d5

@@ -1,0 +1,31 @@
+slice_name: Revenue by Month
+description: null
+certified_by: null
+certification_details: null
+viz_type: echarts_timeseries_bar
+params:
+  datasource: 1__table
+  adhoc_filters: []
+  viz_type: echarts_timeseries_bar
+  x_axis: order_date
+  time_grain_sqla: P1M
+  granularity_sqla: order_date
+  metrics:
+  - revenue
+  groupby: []
+  row_limit: 10000
+  x_axis_sort_asc: true
+query_context: '{"datasource": {"id": 1, "type": "table"}, "force": false, "queries":
+  [{"metrics": ["revenue"], "columns": [{"timeGrain": "P1M", "columnType": "BASE_AXIS",
+  "sqlExpression": "order_date", "label": "order_date", "expressionType": "SQL"}],
+  "filters": [], "extras": {"having": "", "where": "", "time_grain_sqla": "P1M"},
+  "orderby": [], "row_limit": 10000, "annotation_layers": [], "series_limit": 0, "order_desc":
+  true, "is_timeseries": true, "series_columns": [], "granularity": "order_date"}],
+  "form_data": {"datasource": "1__table", "adhoc_filters": [], "viz_type": "echarts_timeseries_bar",
+  "x_axis": "order_date", "time_grain_sqla": "P1M", "granularity_sqla": "order_date",
+  "metrics": ["revenue"], "groupby": [], "row_limit": 10000, "x_axis_sort_asc": true},
+  "result_format": "json", "result_type": "full"}'
+cache_timeout: null
+uuid: 3d050787-3e8c-48f2-9863-a8095cd04db9
+version: 1.0.0
+dataset_uuid: 1db1eeb1-1bbd-4833-be3a-8d1a6bf282d5

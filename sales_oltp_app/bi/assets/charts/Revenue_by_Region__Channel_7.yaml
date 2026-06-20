@@ -1,0 +1,29 @@
+slice_name: Revenue by Region & Channel
+description: null
+certified_by: null
+certification_details: null
+viz_type: table
+params:
+  datasource: 1__table
+  adhoc_filters: []
+  viz_type: table
+  query_mode: aggregate
+  groupby:
+  - region
+  - channel
+  metrics:
+  - revenue
+  - orders
+  order_desc: true
+  row_limit: 50
+query_context: '{"datasource": {"id": 1, "type": "table"}, "force": false, "queries":
+  [{"metrics": ["revenue", "orders"], "columns": ["region", "channel"], "filters":
+  [], "extras": {"having": "", "where": ""}, "orderby": [["revenue", false]], "row_limit":
+  50, "annotation_layers": [], "series_limit": 0, "order_desc": true}], "form_data":
+  {"datasource": "1__table", "adhoc_filters": [], "viz_type": "table", "query_mode":
+  "aggregate", "groupby": ["region", "channel"], "metrics": ["revenue", "orders"],
+  "order_desc": true, "row_limit": 50}, "result_format": "json", "result_type": "full"}'
+cache_timeout: null
+uuid: e6399cc2-68ac-4b8a-89d6-02bd8f77fc3d
+version: 1.0.0
+dataset_uuid: 1db1eeb1-1bbd-4833-be3a-8d1a6bf282d5

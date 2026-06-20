@@ -1,0 +1,21 @@
+slice_name: Units Sold
+description: null
+certified_by: null
+certification_details: null
+viz_type: big_number_total
+params:
+  datasource: 1__table
+  adhoc_filters: []
+  viz_type: big_number_total
+  metric: units
+  y_axis_format: ',.0f'
+query_context: '{"datasource": {"id": 1, "type": "table"}, "force": false, "queries":
+  [{"metrics": ["units"], "columns": [], "filters": [], "extras": {"having": "", "where":
+  ""}, "orderby": [], "row_limit": 0, "annotation_layers": [], "series_limit": 0,
+  "order_desc": true}], "form_data": {"datasource": "1__table", "adhoc_filters": [],
+  "viz_type": "big_number_total", "metric": "units", "y_axis_format": ",.0f"}, "result_format":
+  "json", "result_type": "full"}'
+cache_timeout: null
+uuid: 1e1a9349-a735-4d26-947d-c51a2ee254a1
+version: 1.0.0
+dataset_uuid: 1db1eeb1-1bbd-4833-be3a-8d1a6bf282d5

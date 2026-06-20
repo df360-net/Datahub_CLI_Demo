@@ -1,0 +1,272 @@
+dashboard_title: Sales Overview
+description: null
+css: null
+slug: sales-overview
+certified_by: null
+certification_details: null
+published: true
+uuid: a0301891-837a-4eac-9b37-52761fe8fadb
+position:
+  DASHBOARD_VERSION_KEY: v2
+  ROOT_ID:
+    type: ROOT
+    id: ROOT_ID
+    children:
+    - GRID_ID
+  GRID_ID:
+    type: GRID
+    id: GRID_ID
+    parents:
+    - ROOT_ID
+    children:
+    - ROW-1
+    - ROW-2
+    - ROW-3
+    - ROW-N-AOCKVLF1
+  HEADER_ID:
+    type: HEADER
+    id: HEADER_ID
+    meta:
+      text: Sales Overview
+  ROW-1:
+    type: ROW
+    id: ROW-1
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    children:
+    - CHART-bn_rev
+    - CHART-bn_ord
+    - CHART-bn_units
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-bn_rev:
+    type: CHART
+    id: CHART-bn_rev
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-1
+    children: []
+    meta:
+      chartId: 1
+      width: 4
+      height: 50
+      sliceName: Total Revenue
+  CHART-bn_ord:
+    type: CHART
+    id: CHART-bn_ord
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-1
+    children: []
+    meta:
+      chartId: 2
+      width: 4
+      height: 50
+      sliceName: Orders
+  CHART-bn_units:
+    type: CHART
+    id: CHART-bn_units
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-1
+    children: []
+    meta:
+      chartId: 3
+      width: 4
+      height: 50
+      sliceName: Units Sold
+  ROW-2:
+    type: ROW
+    id: ROW-2
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    children:
+    - CHART-ts_month
+    - CHART-pie_seg
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-ts_month:
+    type: CHART
+    id: CHART-ts_month
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-2
+    children: []
+    meta:
+      chartId: 4
+      width: 8
+      height: 50
+      sliceName: Revenue by Month
+  CHART-pie_seg:
+    type: CHART
+    id: CHART-pie_seg
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-2
+    children: []
+    meta:
+      chartId: 5
+      width: 4
+      height: 50
+      sliceName: Revenue by Segment
+  ROW-3:
+    type: ROW
+    id: ROW-3
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    children:
+    - CHART-tbl_cat
+    - CHART-tbl_reg
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-tbl_cat:
+    type: CHART
+    id: CHART-tbl_cat
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-3
+    children: []
+    meta:
+      chartId: 6
+      width: 6
+      height: 50
+      sliceName: Top Categories
+  CHART-tbl_reg:
+    type: CHART
+    id: CHART-tbl_reg
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-3
+    children: []
+    meta:
+      chartId: 7
+      width: 6
+      height: 50
+      sliceName: Revenue by Region & Channel
+  ROW-N-AOCKVLF1:
+    children:
+    - CHART-28I9KV6X
+    - CHART-ROP4DMU7
+    - CHART-OLLIAPGT
+    - CHART-1G3OJQLL
+    - CHART-2LS1Y9C9
+    - CHART-5G23OCJB
+    - CHART-8DLIBDHJ
+    id: ROW-N-AOCKVLF1
+    meta:
+      '0': ROOT_ID
+      background: BACKGROUND_TRANSPARENT
+    type: ROW
+    parents:
+    - ROOT_ID
+    - GRID_ID
+  CHART-28I9KV6X:
+    children: []
+    id: CHART-28I9KV6X
+    meta:
+      chartId: 2
+      height: 50
+      sliceName: Orders
+      uuid: e11f08c0-e1a0-4e66-93c4-dec363b9479f
+      width: 4
+    type: CHART
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-N-AOCKVLF1
+  CHART-ROP4DMU7:
+    children: []
+    id: CHART-ROP4DMU7
+    meta:
+      chartId: 4
+      height: 50
+      sliceName: Revenue by Month
+      uuid: 3d050787-3e8c-48f2-9863-a8095cd04db9
+      width: 4
+    type: CHART
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-N-AOCKVLF1
+  CHART-OLLIAPGT:
+    children: []
+    id: CHART-OLLIAPGT
+    meta:
+      chartId: 3
+      height: 50
+      sliceName: Units Sold
+      uuid: 1e1a9349-a735-4d26-947d-c51a2ee254a1
+      width: 4
+    type: CHART
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-N-AOCKVLF1
+  CHART-1G3OJQLL:
+    children: []
+    id: CHART-1G3OJQLL
+    meta:
+      chartId: 7
+      height: 50
+      sliceName: Revenue by Region & Channel
+      uuid: e6399cc2-68ac-4b8a-89d6-02bd8f77fc3d
+      width: 4
+    type: CHART
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-N-AOCKVLF1
+  CHART-2LS1Y9C9:
+    children: []
+    id: CHART-2LS1Y9C9
+    meta:
+      chartId: 1
+      height: 50
+      sliceName: Total Revenue
+      uuid: 8b478377-7418-40bc-90d6-74bbec3c2ef5
+      width: 4
+    type: CHART
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-N-AOCKVLF1
+  CHART-5G23OCJB:
+    children: []
+    id: CHART-5G23OCJB
+    meta:
+      chartId: 5
+      height: 50
+      sliceName: Revenue by Segment
+      uuid: 48ebf501-4999-4195-8694-dd1f2e02514f
+      width: 4
+    type: CHART
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-N-AOCKVLF1
+  CHART-8DLIBDHJ:
+    children: []
+    id: CHART-8DLIBDHJ
+    meta:
+      chartId: 6
+      height: 50
+      sliceName: Top Categories
+      uuid: 9b06f955-7844-4485-83ff-2cce37618cd3
+      width: 4
+    type: CHART
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-N-AOCKVLF1
+theme_uuid: null
+version: 1.0.0

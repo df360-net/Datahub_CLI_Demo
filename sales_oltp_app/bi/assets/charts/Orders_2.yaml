@@ -1,0 +1,21 @@
+slice_name: Orders
+description: null
+certified_by: null
+certification_details: null
+viz_type: big_number_total
+params:
+  datasource: 1__table
+  adhoc_filters: []
+  viz_type: big_number_total
+  metric: orders
+  y_axis_format: ',.0f'
+query_context: '{"datasource": {"id": 1, "type": "table"}, "force": false, "queries":
+  [{"metrics": ["orders"], "columns": [], "filters": [], "extras": {"having": "",
+  "where": ""}, "orderby": [], "row_limit": 0, "annotation_layers": [], "series_limit":
+  0, "order_desc": true}], "form_data": {"datasource": "1__table", "adhoc_filters":
+  [], "viz_type": "big_number_total", "metric": "orders", "y_axis_format": ",.0f"},
+  "result_format": "json", "result_type": "full"}'
+cache_timeout: null
+uuid: e11f08c0-e1a0-4e66-93c4-dec363b9479f
+version: 1.0.0
+dataset_uuid: 1db1eeb1-1bbd-4833-be3a-8d1a6bf282d5
