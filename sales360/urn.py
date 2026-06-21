@@ -1,10 +1,11 @@
-"""URN builders. Every dataset is namespaced by the firm PID (DataHub platformInstance) so the
-graph is unique firm-wide - the same convention CardCompass uses, kept separate from it."""
+"""URN builders. Datasets carry NO platformInstance - the single, clickable SAL360 Application
+entity is the cross-platform home instead. Each dataset still nests under a per-platform schema
+Container (sales_bronze, etc.)."""
 from datahub.emitter.mce_builder import (
     make_data_flow_urn,
     make_data_job_urn,
     make_data_platform_urn,
-    make_dataset_urn_with_platform_instance,
+    make_dataset_urn,
     make_schema_field_urn,
 )
 
@@ -12,8 +13,12 @@ ORCHESTRATOR = "airflow"
 FLOW_ID = "sales_daily"
 
 
-def dataset_urn(platform: str, name: str, pid: str, env: str = "PROD") -> str:
-    return make_dataset_urn_with_platform_instance(platform, name, pid, env)
+def dataset_urn(platform: str, name: str, env: str = "PROD") -> str:
+    return make_dataset_urn(platform, name, env)
+
+
+def app_urn(app_id: str) -> str:
+    return f"urn:li:application:{app_id}"
 
 
 def platform_urn(platform: str) -> str:

@@ -1,14 +1,25 @@
 """Build and push the Sales360 catalog + lineage to DataHub via direct token auth.
 
-Per dataset: schemaMetadata + datasetProperties. Per lineage edge: upstreamLineage (table-level).
-Plus one DataFlow (sales_daily) and a DataJob per Airflow task with dataJobInputOutput, which
-overlays the process lineage onto the same datasets. Idempotent: re-running upserts every aspect.
+Structure:
+- ONE Application entity "SAL360" (top-level, clickable) that owns every asset across all 4
+  platforms (mysql/spark/dremio/airflow), via the `applications` aspect.
+- A per-platform schema Container (sales_oltp, sales_bronze/silver/gold, sales_curated) that the
+  tables nest under.
+- Datasets carry NO platformInstance (the Application is the cross-platform home instead).
+
+Per dataset: schemaMetadata + datasetProperties + container + applications. Per edge:
+upstreamLineage (table + column level). Plus the sales_daily DataFlow + 9 DataJobs (also owned by
+the Application). Idempotent: re-running upserts every aspect.
 
 Run:  python -m sales360
 """
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
+from datahub.emitter.mcp_builder import DatabaseKey, add_dataset_to_container, gen_containers
 from datahub.emitter.rest_emitter import DatahubRestEmitter
 from datahub.metadata.schema_classes import (
+    ApplicationKeyClass,
+    ApplicationPropertiesClass,
+    ApplicationsClass,
     BooleanTypeClass,
     DataFlowInfoClass,
     DataJobInfoClass,
@@ -32,7 +43,7 @@ from datahub.metadata.schema_classes import (
 
 from sales360.config import Settings
 from sales360.model import AIRFLOW, EXPLICIT_COLMAP, LAYER_PLATFORM, LINEAGE, TABLES, datasets
-from sales360.urn import dataset_urn, field_urn, flow_urn, job_urn, platform_urn
+from sales360.urn import app_urn, dataset_urn, field_urn, flow_urn, job_urn, platform_urn
 
 LAYER_DESC = {
     "mysql":  "Raw operational table (MySQL OLTP source of record)",
@@ -72,17 +83,40 @@ def main():
     s = Settings.load()
     emitter = DatahubRestEmitter(gms_server=s.gms_server, token=s.token)
     emitter.test_connection()
-    print(f"connected to DataHub @ {s.gms_server}  (platformInstance={s.platform_instance})")
+    APP = app_urn(s.app_id)
+    print(f"connected to DataHub @ {s.gms_server}  (Application={s.app_id})")
 
     def dsurn(layer, table):
         platform, ns = LAYER_PLATFORM[layer]
-        return dataset_urn(platform, f"{ns}.{table}", s.platform_instance, s.env)
+        return dataset_urn(platform, f"{ns}.{table}", s.env)
+
+    def ckey(layer):
+        platform, ns = LAYER_PLATFORM[layer]
+        return DatabaseKey(platform=platform, instance=None, env=s.env, database=ns)
 
     def emit(urn, aspect):
         emitter.emit(MetadataChangeProposalWrapper(entityUrn=urn, aspect=aspect))
 
     n = 0
-    # 1. datasets: schema + properties
+    # 0. the SAL360 Application (single, clickable, cross-platform home)
+    emit(APP, ApplicationKeyClass(id=s.app_id))
+    emit(APP, ApplicationPropertiesClass(
+        name=s.app_id,
+        description="Sales360 - end-to-end Sales data platform: OLTP -> medallion -> serving/BI"))
+    n += 2
+
+    # 1. one schema Container per layer namespace, owned by the Application
+    for layer in LAYER_PLATFORM:
+        platform, ns = LAYER_PLATFORM[layer]
+        for wu in gen_containers(ckey(layer), name=ns, sub_types=["Schema"],
+                                 description=f"Sales360 {layer} schema ({platform})"):
+            emitter.emit(wu.metadata)
+            n += 1
+        emit_container_urn = ckey(layer).as_urn()
+        emit(emit_container_urn, ApplicationsClass(applications=[APP]))
+        n += 1
+
+    # 2. datasets: schema + properties + container + application
     for layer, table, cols in datasets():
         platform, ns = LAYER_PLATFORM[layer]
         urn, full = dsurn(layer, table), f"{ns}.{table}"
@@ -90,15 +124,18 @@ def main():
         emit(urn, DatasetPropertiesClass(
             name=table, qualifiedName=full, description=LAYER_DESC[layer],
             customProperties={"source.app": "Sales360", "layer": layer, "namespace": ns}))
-        n += 2
-    n_ds = n // 2
-    print(f"  {n_ds} datasets (schema + properties)")
+        for wu in add_dataset_to_container(ckey(layer), urn):
+            emitter.emit(wu.metadata)
+            n += 1
+        emit(urn, ApplicationsClass(applications=[APP]))
+        n += 3
+    print(f"  {sum(len(t) for t in TABLES.values())} datasets (schema + properties + container + app)")
 
-    # 2. table-level + column-level (fineGrained) lineage
+    # 3. table-level + column-level (fineGrained) lineage
     def colmap_for(down, ups):
-        if down in EXPLICIT_COLMAP:                 # the two non-1:1 transforms
+        if down in EXPLICIT_COLMAP:
             return EXPLICIT_COLMAP[down]
-        dl, dt = down                               # 1:1 edges: identity by matching column name
+        dl, dt = down
         out = {}
         for col in TABLES[dl][dt]:
             srcs = [(ul, ut, col) for (ul, ut) in ups if col in TABLES[ul][ut]]
@@ -119,29 +156,30 @@ def main():
 
     edges = col_maps = 0
     for (dl, dt), ups in LINEAGE:
-        fgls = fine_grained((dl, dt), ups)
         emit(dsurn(dl, dt), UpstreamLineageClass(
             upstreams=[UpstreamClass(dataset=dsurn(*u), type=DatasetLineageTypeClass.TRANSFORMED) for u in ups],
-            fineGrainedLineages=fgls))
+            fineGrainedLineages=fine_grained((dl, dt), ups)))
         edges += len(ups)
-        col_maps += len(fgls)
+        col_maps += len(colmap_for((dl, dt), ups))
         n += 1
     print(f"  {len(LINEAGE)} lineage aspects ({edges} table edges, {col_maps} column mappings)")
 
-    # 3. Airflow process lineage: DataFlow + DataJobs
+    # 4. Airflow process lineage, also owned by the Application
     emit(flow_urn(), DataFlowInfoClass(
         name="sales_daily",
         description="End-to-end Sales platform: OLTP day -> feed -> medallion -> DQ -> serving/BI",
         customProperties={"source.app": "Sales360"}))
-    n += 1
+    emit(flow_urn(), ApplicationsClass(applications=[APP]))
+    n += 2
     for job_id, desc, ins, outs in AIRFLOW:
         ju = job_urn(job_id)
         emit(ju, DataJobInfoClass(name=job_id, type="COMMAND", description=desc))
         emit(ju, DataJobInputOutputClass(
             inputDatasets=[dsurn(*x) for x in ins], outputDatasets=[dsurn(*x) for x in outs]))
-        n += 2
+        emit(ju, ApplicationsClass(applications=[APP]))
+        n += 3
     print(f"  1 DataFlow + {len(AIRFLOW)} DataJobs (process lineage)")
-    print(f"done: {n} aspects emitted to DataHub")
+    print(f"done: {n} aspects emitted; everything owned by Application '{s.app_id}'")
 
 
 if __name__ == "__main__":

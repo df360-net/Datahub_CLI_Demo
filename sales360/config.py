@@ -10,7 +10,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 class Settings(BaseModel):
     gms_server: str
     token: str
-    platform_instance: str
+    app_id: str          # the SAL360 Application entity id (top-level clickable container)
     env: str = "PROD"
 
     @classmethod
@@ -26,6 +26,6 @@ class Settings(BaseModel):
         return cls(
             gms_server=os.environ.get("SALES360_GMS_SERVER", "http://192.168.0.16:8080"),
             token=token,
-            platform_instance=os.environ.get("SALES360_PID", "SAL360"),
+            app_id=os.environ.get("SALES360_PID", "SAL360"),
             env=os.environ.get("SALES360_ENV", "PROD"),
         )
