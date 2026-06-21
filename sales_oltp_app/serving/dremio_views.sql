@@ -12,6 +12,10 @@ CREATE OR REPLACE VIEW sales_curated.dim_store    AS SELECT * FROM nessie.sales_
 CREATE OR REPLACE VIEW sales_curated.dim_date     AS SELECT * FROM nessie.sales_gold.dim_date     AT BRANCH main;
 CREATE OR REPLACE VIEW sales_curated.fact_sales   AS SELECT * FROM nessie.sales_gold.fact_sales   AT BRANCH main;
 
+-- ---------- streaming hello-world: Debezium CDC -> Spark -> Iceberg (nessie.sales_stream) ----------
+-- See docs/05_Kafka_hello_world_design.md. Rows arrive via the streaming path, not the batch gold load.
+CREATE OR REPLACE VIEW sales_curated.kafka_test AS SELECT * FROM nessie.sales_stream.kafka_test AT BRANCH main;
+
 -- ---------- wide reporting OBT for Superset (AS-OF: joins on the surrogate keys) ----------
 -- The fact's surrogate keys are already point-in-time-resolved, so a plain equi-join yields the
 -- dimension version that was current at order time. No valid_from/valid_to or is_current logic.

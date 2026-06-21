@@ -1,0 +1,10 @@
+# Redpanda Console config (mounted; CONFIG_FILEPATH points here). v3.7.4 uses the top-level
+# `kafkaConnect` key (not `connect`) to surface the Kafka Connect / Debezium cluster in the UI.
+kafka:
+  brokers:
+    - kafka:9092
+kafkaConnect:
+  enabled: true
+  clusters:
+    - name: connect
+      url: http://connect:8083

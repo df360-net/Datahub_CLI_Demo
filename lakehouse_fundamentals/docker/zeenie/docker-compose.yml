@@ -178,6 +178,78 @@ services:
       (superset fab create-admin --username admin --firstname Admin --lastname User --email admin@local --password password || true) &&
       superset init &&
       /usr/bin/run-server.sh"
+  # Wave 5 - streaming (separate from DataHub's own Kafka on Murphy; that one is DataHub's
+  # metadata-event backbone and must not be touched). This is the DATA-event backbone for the
+  # Sales pipeline: MySQL -> Debezium CDC -> here -> Spark Structured Streaming -> Iceberg.
+  # Single-broker KRaft (no Zookeeper). Profiled - not part of the default `up`:
+  #   docker compose --profile streaming up -d kafka
+  # Dual listeners: containers on iceberg_net use kafka:9092; LAN tools use 192.168.0.21:29092.
+  # Config is the mounted ./kafka/server.properties (NOT KAFKA_* env vars) - the image's
+  # configure script mangles listeners in combined KRaft mode when KAFKA_PROCESS_ROLES is in
+  # the env. Only CLUSTER_ID stays in env (the image's wrapper needs it to format storage).
+  kafka:
+    image: apache/kafka:3.9.0
+    container_name: kafka
+    restart: unless-stopped
+    profiles: ["streaming"]
+    networks:
+      iceberg_net:
+    ports:
+      - 29092:29092
+    environment:
+      - TZ=America/New_York
+      - CLUSTER_ID=5L6g3nShT-eMCtK--X86sw
+    volumes:
+      - ./kafka/server.properties:/mnt/shared/config/server.properties
+      - kafka-data:/var/lib/kafka/data
+  # Kafka admin UI (headless Kafka has none). Browses topics + message contents (JSON pretty-
+  # printed), consumer groups, lag; will also surface Kafka Connect/Debezium once that lands.
+  # Reads the broker over the INTERNAL listener (kafka:9092). Profiled with kafka.
+  # UI: http://192.168.0.21:8085  (8080 is Airflow's, so host-mapped to 8085).
+  redpanda-console:
+    image: redpandadata/console:latest
+    container_name: redpanda-console
+    restart: unless-stopped
+    profiles: ["streaming"]
+    depends_on:
+      - kafka
+    networks:
+      iceberg_net:
+    ports:
+      - 8085:8080
+    # Config via mounted file (v3.7.4 wants the `kafkaConnect` key; env-var mapping for nested
+    # camelCase keys is fiddly). Surfaces the Connect/Debezium cluster in the Console's Connect tab.
+    environment:
+      - TZ=America/New_York
+      - CONFIG_FILEPATH=/etc/console/config.yaml
+    volumes:
+      - ./redpanda/console-config.yaml:/etc/console/config.yaml
+  # Kafka Connect worker + Debezium plugins (CDC). Boots, joins the broker, waits for connector
+  # configs POSTed to its REST API (:8083). Stores its own state in 3 auto-created Kafka topics.
+  # JSON converters with schemas.enable=false -> the topic value is the bare Debezium envelope
+  # (op/before/after/source), which keeps the Spark side simple. See docs/05_Kafka_hello_world_design.md.
+  connect:
+    image: quay.io/debezium/connect:3.1.3.Final
+    container_name: connect
+    restart: unless-stopped
+    profiles: ["streaming"]
+    depends_on:
+      - kafka
+    networks:
+      iceberg_net:
+    ports:
+      - 8083:8083
+    environment:
+      - TZ=America/New_York
+      - BOOTSTRAP_SERVERS=kafka:9092
+      - GROUP_ID=1
+      - CONFIG_STORAGE_TOPIC=_connect_configs
+      - OFFSET_STORAGE_TOPIC=_connect_offsets
+      - STATUS_STORAGE_TOPIC=_connect_statuses
+      - KEY_CONVERTER=org.apache.kafka.connect.json.JsonConverter
+      - VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter
+      - CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE=false
+      - CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE=false
 networks:
   iceberg_net:
 volumes:
@@ -185,3 +257,4 @@ volumes:
   minio-data:
   airflow-data:
   superset-home:
+  kafka-data:
