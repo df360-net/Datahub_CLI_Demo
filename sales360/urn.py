@@ -5,6 +5,7 @@ from datahub.emitter.mce_builder import (
     make_data_job_urn,
     make_data_platform_urn,
     make_dataset_urn_with_platform_instance,
+    make_schema_field_urn,
 )
 
 ORCHESTRATOR = "airflow"
@@ -25,3 +26,7 @@ def flow_urn(cluster: str = "PROD") -> str:
 
 def job_urn(job_id: str, cluster: str = "PROD") -> str:
     return make_data_job_urn(ORCHESTRATOR, FLOW_ID, job_id, cluster)
+
+
+def field_urn(dataset_urn_: str, column: str) -> str:
+    return make_schema_field_urn(dataset_urn_, column)

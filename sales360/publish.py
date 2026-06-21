@@ -16,6 +16,9 @@ from datahub.metadata.schema_classes import (
     DatasetLineageTypeClass,
     DatasetPropertiesClass,
     DateTypeClass,
+    FineGrainedLineageClass,
+    FineGrainedLineageDownstreamTypeClass,
+    FineGrainedLineageUpstreamTypeClass,
     NumberTypeClass,
     OtherSchemaClass,
     SchemaFieldClass,
@@ -28,8 +31,8 @@ from datahub.metadata.schema_classes import (
 )
 
 from sales360.config import Settings
-from sales360.model import AIRFLOW, LAYER_PLATFORM, LINEAGE, datasets
-from sales360.urn import dataset_urn, flow_urn, job_urn, platform_urn
+from sales360.model import AIRFLOW, EXPLICIT_COLMAP, LAYER_PLATFORM, LINEAGE, TABLES, datasets
+from sales360.urn import dataset_urn, field_urn, flow_urn, job_urn, platform_urn
 
 LAYER_DESC = {
     "mysql":  "Raw operational table (MySQL OLTP source of record)",
@@ -91,14 +94,39 @@ def main():
     n_ds = n // 2
     print(f"  {n_ds} datasets (schema + properties)")
 
-    # 2. table-level lineage
-    edges = 0
+    # 2. table-level + column-level (fineGrained) lineage
+    def colmap_for(down, ups):
+        if down in EXPLICIT_COLMAP:                 # the two non-1:1 transforms
+            return EXPLICIT_COLMAP[down]
+        dl, dt = down                               # 1:1 edges: identity by matching column name
+        out = {}
+        for col in TABLES[dl][dt]:
+            srcs = [(ul, ut, col) for (ul, ut) in ups if col in TABLES[ul][ut]]
+            if srcs:
+                out[col] = srcs
+        return out
+
+    def fine_grained(down, ups):
+        dn_urn = dsurn(*down)
+        fgls = []
+        for dcol, srcs in colmap_for(down, ups).items():
+            fgls.append(FineGrainedLineageClass(
+                upstreamType=FineGrainedLineageUpstreamTypeClass.FIELD_SET,
+                upstreams=[field_urn(dsurn(ul, ut), uc) for ul, ut, uc in srcs],
+                downstreamType=FineGrainedLineageDownstreamTypeClass.FIELD,
+                downstreams=[field_urn(dn_urn, dcol)]))
+        return fgls
+
+    edges = col_maps = 0
     for (dl, dt), ups in LINEAGE:
+        fgls = fine_grained((dl, dt), ups)
         emit(dsurn(dl, dt), UpstreamLineageClass(
-            upstreams=[UpstreamClass(dataset=dsurn(*u), type=DatasetLineageTypeClass.TRANSFORMED) for u in ups]))
+            upstreams=[UpstreamClass(dataset=dsurn(*u), type=DatasetLineageTypeClass.TRANSFORMED) for u in ups],
+            fineGrainedLineages=fgls))
         edges += len(ups)
+        col_maps += len(fgls)
         n += 1
-    print(f"  {len(LINEAGE)} lineage aspects ({edges} edges)")
+    print(f"  {len(LINEAGE)} lineage aspects ({edges} table edges, {col_maps} column mappings)")
 
     # 3. Airflow process lineage: DataFlow + DataJobs
     emit(flow_urn(), DataFlowInfoClass(

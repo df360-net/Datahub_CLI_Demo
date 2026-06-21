@@ -101,6 +101,64 @@ LINEAGE = (
          ("dremio", "dim_store"), ("dremio", "dim_date")])]
 )
 
+# ---- explicit column-level maps for the two NON-1:1 transforms ----
+# downstream_col -> [(up_layer, up_table, up_col), ...].  Edges not listed here get auto-derived
+# identity maps (downstream col <- same-named upstream col) in publish.py.
+# gold.fact_sales (from gold_fact.py SELECT): surrogate keys resolved via the dim joins.
+FACT_COLMAP = {
+    "sales_key":       [("silver", "order_items", "order_id"), ("silver", "order_items", "line_no")],
+    "date_key":        [("silver", "orders", "order_date")],
+    "customer_key":    [("gold", "dim_customer", "customer_key")],
+    "product_key":     [("gold", "dim_product", "product_key")],
+    "store_key":       [("gold", "dim_store", "store_key")],
+    "order_id":        [("silver", "order_items", "order_id")],
+    "line_no":         [("silver", "order_items", "line_no")],
+    "status":          [("silver", "orders", "status")],
+    "quantity":        [("silver", "order_items", "quantity")],
+    "unit_price":      [("silver", "order_items", "unit_price")],
+    "discount_pct":    [("silver", "order_items", "discount_pct")],
+    "extended_amount": [("silver", "order_items", "line_amount")],
+    "order_date":      [("silver", "orders", "order_date")],
+}
+# dremio.vw_sales_report (from dremio_views.sql): wide OBT joining the curated views.
+OBT_COLMAP = {
+    "order_id":           [("dremio", "fact_sales", "order_id")],
+    "line_no":            [("dremio", "fact_sales", "line_no")],
+    "status":             [("dremio", "fact_sales", "status")],
+    "order_date":         [("dremio", "fact_sales", "order_date")],
+    "year":               [("dremio", "dim_date", "year")],
+    "quarter":            [("dremio", "dim_date", "quarter")],
+    "month":              [("dremio", "dim_date", "month")],
+    "month_name":         [("dremio", "dim_date", "month_name")],
+    "day_name":           [("dremio", "dim_date", "day_name")],
+    "is_weekend":         [("dremio", "dim_date", "is_weekend")],
+    "customer_id":        [("dremio", "dim_customer", "customer_id")],
+    "first_name":         [("dremio", "dim_customer", "first_name")],
+    "last_name":          [("dremio", "dim_customer", "last_name")],
+    "segment":            [("dremio", "dim_customer", "segment")],
+    "customer_city":      [("dremio", "dim_customer", "city")],
+    "customer_state":     [("dremio", "dim_customer", "state")],
+    "product_id":         [("dremio", "dim_product", "product_id")],
+    "sku":                [("dremio", "dim_product", "sku")],
+    "product_name":       [("dremio", "dim_product", "product_name")],
+    "category_name":      [("dremio", "dim_product", "category_name")],
+    "product_list_price": [("dremio", "dim_product", "unit_price")],
+    "store_id":           [("dremio", "dim_store", "store_id")],
+    "store_name":         [("dremio", "dim_store", "store_name")],
+    "channel":            [("dremio", "dim_store", "channel")],
+    "region":             [("dremio", "dim_store", "region")],
+    "store_city":         [("dremio", "dim_store", "city")],
+    "store_state":        [("dremio", "dim_store", "state")],
+    "quantity":           [("dremio", "fact_sales", "quantity")],
+    "sale_unit_price":    [("dremio", "fact_sales", "unit_price")],
+    "discount_pct":       [("dremio", "fact_sales", "discount_pct")],
+    "extended_amount":    [("dremio", "fact_sales", "extended_amount")],
+}
+EXPLICIT_COLMAP = {
+    ("gold", "fact_sales"): FACT_COLMAP,
+    ("dremio", "vw_sales_report"): OBT_COLMAP,
+}
+
 # ---- Airflow process lineage: ordered tasks with dataset I/O ----
 _OLTP_T = list(_OLTP)
 _BRONZE_T = list(_OLTP)
