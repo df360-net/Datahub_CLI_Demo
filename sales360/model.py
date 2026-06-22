@@ -7,13 +7,24 @@ A dataset is keyed by (layer, table). Layers map to (platform, namespace):
     dremio -> (dremio, sales_curated)
 """
 
-LAYER_PLATFORM = {
-    "mysql":  ("mysql",  "sales_oltp"),
-    "bronze": ("spark",  "sales_bronze"),
-    "silver": ("spark",  "sales_silver"),
-    "gold":   ("spark",  "sales_gold"),
-    "dremio": ("dremio", "sales_curated"),
+# One logical platform; the three engines are represented as Database containers (by name), and
+# the lakehouse's medallion layers are Schemas under it. layer -> (database, schema-or-None).
+PLATFORM = "sales360"
+LAYER_CONTAINER = {
+    "mysql":  ("sales_oltp", None),            # MySQL OLTP -> tables directly in the database
+    "bronze": ("sales_lakehouse", "sales_bronze"),
+    "silver": ("sales_lakehouse", "sales_silver"),
+    "gold":   ("sales_lakehouse", "sales_gold"),
+    "dremio": ("sales_curated", None),         # Dremio views -> directly in the database
 }
+DATABASES = ("sales_oltp", "sales_lakehouse", "sales_curated")
+LAKEHOUSE_SCHEMAS = ("sales_bronze", "sales_silver", "sales_gold")
+
+
+def dataset_name(layer, table):
+    """Dotted name under the instance, e.g. sales_lakehouse.sales_bronze.customers."""
+    db, schema = LAYER_CONTAINER[layer]
+    return ".".join([db] + ([schema] if schema else []) + [table])
 
 # ---- OLTP (MySQL) ----  raw operational tables
 _OLTP = {

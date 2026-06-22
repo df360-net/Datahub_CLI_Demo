@@ -10,7 +10,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 class Settings(BaseModel):
     gms_server: str
     token: str
-    app_id: str          # the SAL360 Application entity id (top-level clickable container)
+    platform: str = "sales360"   # single logical platform; engines shown by database name
+    instance: str                # ENTERPRISE_APP_ID -> the top-level platformInstance
     env: str = "PROD"
 
     @classmethod
@@ -23,9 +24,13 @@ class Settings(BaseModel):
         token = os.environ.get("DATAHUB_ACCESS_TOKEN")
         if not token:
             raise SystemExit("DATAHUB_ACCESS_TOKEN not set in .env")
+        instance = os.environ.get("ENTERPRISE_APP_ID")
+        if not instance:
+            raise SystemExit("ENTERPRISE_APP_ID not set in .env")
         return cls(
             gms_server=os.environ.get("SALES360_GMS_SERVER", "http://192.168.0.16:8080"),
             token=token,
-            app_id=os.environ.get("SALES360_PID", "SAL360"),
+            platform=os.environ.get("SALES360_PLATFORM", "sales360"),
+            instance=instance,
             env=os.environ.get("SALES360_ENV", "PROD"),
         )
