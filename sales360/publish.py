@@ -121,7 +121,8 @@ def main():
     n = 0
     # 0. register the logical platform + the named, clickable platformInstance (top container)
     emit(platform_urn(P), DataPlatformInfoClass(
-        name=P, type=PlatformTypeClass.OTHERS, datasetNameDelimiter=".", displayName="Sales360"))
+        name=P, type=PlatformTypeClass.OTHERS, datasetNameDelimiter=".", displayName="Sales360",
+        logoUrl="assets/platforms/defaultlogo.png"))
     emit(instance_urn(P, INST), DataPlatformInstancePropertiesClass(
         name=INST, description="Sales360 enterprise application instance"))
     n += 2
